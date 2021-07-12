@@ -4,11 +4,12 @@ import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
-from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QGridLayout, QFormLayout, \
-    QHBoxLayout, QLabel, QMessageBox
+from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QFormLayout, QMessageBox
 from PySide2.QtGui import QIcon
 
 matplotlib.use('Qt5Agg')  # Render to PySide/PyQt Canvas
+
+POINTS_NUMBER = 20
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=600, height=600, dpi=72):
@@ -26,6 +27,10 @@ class Window(QWidget):
         self.setWindowTitle("Function Plotter")
         self.setMinimumWidth(400)
         self.setMinimumHeight(300)
+
+        self.errorMessage = ""
+        self.showError = True
+        self.errorMessageBox = QMessageBox
 
         self.setIcon()
 
@@ -45,16 +50,19 @@ class Window(QWidget):
         self.setWindowIcon(appIcon)
 
     def createWidgets(self):
-        function = QLineEdit("5*x^3 + 2*x")
+        function = QLineEdit()
+        function.setPlaceholderText('5*x^3 + 2*x')
         function.setMaximumWidth(200)
 
-        min = QLineEdit('0')
+        min = QLineEdit()
+        min.setPlaceholderText('0')
         min.setMaximumWidth(200)
 
-        max = QLineEdit('100')
+        max = QLineEdit()
+        max.setPlaceholderText('100')
         max.setMaximumWidth(200)
 
-        button = QPushButton("Plot")
+        button = QPushButton('Plot')
         button.setMaximumWidth(100)
         button.clicked.connect(self.updatePlot)
 
@@ -73,34 +81,44 @@ class Window(QWidget):
         outerLayout.addWidget(self.canvas)
         return outerLayout
 
-    def updatePlot(self):
-        # take the text and remove spaces
-        f_x = self.function.text().replace(" ", "").replace("^", "**")
+    def createError(self, err):
+        self.errorMessage = err
+        if self.showError:
+            self.errorMessageBox.warning(self, 'Error', self.errorMessage)
+
+    def validateInput(self, f_x, mn, mx):
         result = self.regexCheck.match(f_x)
 
-        if not result or result.group() != f_x or f_x.find(r'x{2,}') != -1 or f_x.find(r'*{3,}') != -1:
-            QMessageBox.warning(self, 'Error', 'the function is not valid')
-            return
+        if f_x == "":
+            self.createError('Please Enter the function')
+            return False
 
-        mn, mx = int(self.min.text()), int(self.max.text())
+        if not result or result.group() != f_x or f_x.find(r'x{2,}') != -1 or f_x.find(r'*{3,}') != -1:
+            self.createError('the function is not valid')
+            return False
+
+        mn = int(mn)
+        mx = int(mx)
+
+        if mn == "":
+            self.createError('Please Enter min Value')
+            return False
+
+        if mx == "":
+            self.createError('Please Enter max Value')
+            return False
 
         if mn < 0:
-            QMessageBox.warning(self, 'Error', 'min < 0')
-            return
+            self.createError('min < 0')
+            return False
 
         if mn >= mx:
-            QMessageBox.warning(self, 'Error', 'min >= max')
-            return
+            self.createError('min >= max')
+            return False
 
-        x = np.linspace(mn, mx)
+        return True
 
-        try:
-            eqn = eval('lambda x : ' + f_x)
-            y = eqn(x)
-        except:
-            QMessageBox.warning(self, 'Error', 'the function is not valid')
-            return
-
+    def plot(self, x, y):
         self.canvas.axes.cla()  # clear the canvas
         self.canvas.axes.plot(x, y)
         self.canvas.axes.set_xlabel('x')
@@ -108,6 +126,23 @@ class Window(QWidget):
         self.canvas.axes.set_title('function plotter')
         self.canvas.draw()
 
+    def updatePlot(self):
+        # take the text and remove spacees
+        f_x = self.function.text().replace(" ", "").replace("^", "**")
+        mn, mx = self.min.text(), self.max.text()
+
+        if not self.validateInput(f_x, mn, mx):
+            return
+
+        x = np.linspace(int(mn), int(mx), POINTS_NUMBER)
+
+        try:
+            eqn = eval('lambda x : ' + f_x)
+            y = eqn(x)
+        except:
+            return self.createError('the function is not valid')
+
+        self.plot(x, y)
 
 if __name__ == '__main__':
     # Create QT App
