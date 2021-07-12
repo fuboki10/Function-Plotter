@@ -19,7 +19,7 @@ import numpy as np
 
 
 from PySide2.QtWidgets import QApplication, QWidget
-
+from PySide2.QtGui import QIcon
 
 class Window(QWidget):
     def __init__(self):
@@ -29,6 +29,12 @@ class Window(QWidget):
 
         self.setMinimumWidth(600)
         self.setMinimumHeight(400)
+
+        self.setIcon()
+
+    def setIcon(self):
+        appIcon = QIcon('icon.png')
+        self.setWindowIcon(appIcon)
 
 
 app = QApplication(sys.argv)
