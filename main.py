@@ -1,7 +1,7 @@
 import re
 import sys
 import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import numpy as np
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QFormLayout, QMessageBox
@@ -10,9 +10,12 @@ from PySide2.QtGui import QIcon
 matplotlib.use('Qt5Agg')  # Render to PySide/PyQt Canvas
 
 POINTS_NUMBER = 20
+WIDTH = 600
+HEIGHT = 600
+
 
 class PlotCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=600, height=600, dpi=72):
+    def __init__(self, parent=None, width=WIDTH, height=HEIGHT, dpi=72):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         self.axes.set_xlabel('x')
@@ -34,9 +37,7 @@ class Window(QWidget):
 
         self.setIcon()
 
-        self.function, self.min, self.max, self.button = self.createWidgets()
-
-        self.canvas = PlotCanvas()
+        self.createWidgets()
 
         self.layout = self.createLayout()
         self.setLayout(self.layout)
@@ -50,23 +51,24 @@ class Window(QWidget):
         self.setWindowIcon(appIcon)
 
     def createWidgets(self):
-        function = QLineEdit()
-        function.setPlaceholderText('5*x^3 + 2*x')
-        function.setMaximumWidth(200)
+        self.function = QLineEdit()
+        self.function.setPlaceholderText('5*x^3 + 2*x')
+        self.function.setMaximumWidth(200)
 
-        min = QLineEdit()
-        min.setPlaceholderText('0')
-        min.setMaximumWidth(200)
+        self.min = QLineEdit()
+        self.min.setPlaceholderText('0')
+        self.min.setMaximumWidth(200)
 
-        max = QLineEdit()
-        max.setPlaceholderText('100')
-        max.setMaximumWidth(200)
+        self.max = QLineEdit()
+        self.max.setPlaceholderText('100')
+        self.max.setMaximumWidth(200)
 
-        button = QPushButton('Plot')
-        button.setMaximumWidth(100)
-        button.clicked.connect(self.updatePlot)
+        self.button = QPushButton('Plot')
+        self.button.setMaximumWidth(100)
+        self.button.clicked.connect(self.updatePlot)
 
-        return function, min, max, button
+        self.canvas = PlotCanvas()
+        self.toolbar = NavigationToolbar(self.canvas, self)
 
     def createLayout(self):
         outerLayout = QVBoxLayout()
@@ -78,6 +80,7 @@ class Window(QWidget):
 
         outerLayout.addLayout(topLayout)
         outerLayout.addWidget(self.button)
+        outerLayout.addWidget(self.toolbar)
         outerLayout.addWidget(self.canvas)
         return outerLayout
 
@@ -119,6 +122,7 @@ class Window(QWidget):
         return True
 
     def plot(self, x, y):
+        self.errorMessage = ""  # Remove Error
         self.canvas.axes.cla()  # clear the canvas
         self.canvas.axes.plot(x, y)
         self.canvas.axes.set_xlabel('x')
@@ -143,6 +147,7 @@ class Window(QWidget):
             return self.createError('the function is not valid')
 
         self.plot(x, y)
+
 
 if __name__ == '__main__':
     # Create QT App
