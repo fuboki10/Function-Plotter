@@ -97,11 +97,8 @@ class Window(QWidget):
             return False
 
         if not result or result.group() != f_x or f_x.find(r'x{2,}') != -1 or f_x.find(r'*{3,}') != -1:
-            self.createError('the function is not valid')
+            self.createError('The function is not valid')
             return False
-
-        mn = int(mn)
-        mx = int(mx)
 
         if mn == "":
             self.createError('Please Enter min Value')
@@ -111,12 +108,28 @@ class Window(QWidget):
             self.createError('Please Enter max Value')
             return False
 
+        try:
+            mn = float(mn)
+        except ValueError:
+            self.createError('Please Enter a valid min Value')
+            return False
+
+        try:
+            mx = float(mx)
+        except ValueError:
+            self.createError('Please Enter a valid max Value')
+            return False
+
         if mn < 0:
-            self.createError('min < 0')
+            self.createError('Min must be greater than 0')
+            return False
+
+        if mx < 0:
+            self.createError('Max must be greater than 0')
             return False
 
         if mn >= mx:
-            self.createError('min >= max')
+            self.createError('Min must be smaller than Max')
             return False
 
         return True
@@ -138,13 +151,13 @@ class Window(QWidget):
         if not self.validateInput(f_x, mn, mx):
             return
 
-        x = np.linspace(int(mn), int(mx), POINTS_NUMBER)
+        x = np.linspace(float(mn), float(mx), POINTS_NUMBER)
 
         try:
             eqn = eval('lambda x : ' + f_x)
             y = eqn(x)
         except:
-            return self.createError('the function is not valid')
+            return self.createError('The function is not valid')
 
         self.plot(x, y)
 
